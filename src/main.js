@@ -106,7 +106,7 @@ askForm.addEventListener('submit', (e) => {
     scene.setCategoryFilter('all');
     scrollToProjectIndex(idx);
   } else {
-    askFeedback.textContent = 'NO MATCHING MISSIONS — TRY "GAMES" OR "XR"';
+    askFeedback.textContent = 'NO MATCHING SYSTEMS — TRY "CLOUD" OR "SECURITY"';
   }
   askFeedback.classList.add('show');
   feedbackTimer = setTimeout(() => askFeedback.classList.remove('show'), 3200);
