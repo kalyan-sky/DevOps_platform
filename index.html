@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CONTINUUM — DevOps Systems, Visualized</title>
-    <meta name="description" content="An interactive 3D showcase of DevOps concepts: CI/CD, infrastructure as code, containers, observability, cloud and security." />
+    <title>Siddam Kalyan — DevOps & AI Engineer</title>
+    <meta name="description" content="Siddam Kalyan is a DevOps & AI Engineer building production cloud infrastructure on GCP/AWS and enterprise Generative AI systems on top of it." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Big+Shoulders+Display:wght@700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -13,53 +13,41 @@
   <body>
     <canvas id="bg"></canvas>
 
-    <nav class="topbar">
-      <div class="brand">CONTINUUM</div>
-      <button class="join-contact" data-scroll-to="contact">DEPLOY — CONTACT</button>
-    </nav>
-
-    <aside class="sidebar" id="sidebar">
-      <p class="sidebar-label">WHAT ARE YOU<br />SHIPPING?</p>
-      <ul class="nav-list" id="nav-list">
-        <li data-filter="all" class="active">ALL SYSTEMS</li>
-        <li data-filter="cicd">CI / CD</li>
-        <li data-filter="iac">INFRASTRUCTURE AS CODE</li>
-        <li data-filter="containers">CONTAINERS</li>
-        <li data-filter="observability">OBSERVABILITY</li>
-        <li data-filter="cloud">CLOUD</li>
-        <li data-filter="security">SECURITY</li>
-      </ul>
-      <form class="ask-form" id="ask-form">
-        <input type="text" id="ask-input" placeholder="ASK THE PIPELINE" autocomplete="off" />
-        <button type="submit" aria-label="Search">→</button>
-      </form>
-      <p class="ask-feedback" id="ask-feedback"></p>
-    </aside>
-
     <main>
-      <section id="hero" class="section">
-        <h1 class="hero-title">EVERY DEPLOY<br />HAS A HEARTBEAT</h1>
-        <p class="hero-sub">Scroll to step into the pipeline</p>
-        <div class="scroll-cue">↓ SCROLL</div>
+      <section class="container hero">
+        <p class="hero-eyebrow">SIDDAM KALYAN — DEVOPS &amp; AI ENGINEER</p>
+        <h1>Building the platform<br />and the intelligence<br />that runs on it.</h1>
+        <p class="role">
+          4+ years shipping production cloud infrastructure on GCP and AWS, and the RAG
+          pipelines, LangGraph agents, and conversational AI systems that run on top of it.
+          Currently product owner, backend engineer, and cloud/DevOps lead for a live
+          production platform.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="projects.html">View Projects</a>
+          <a class="btn" href="contact.html">Get in Touch</a>
+        </div>
+
+        <div class="stats-row" id="stats-row"></div>
       </section>
 
-      <section id="showcase" class="section">
-        <div class="project-frame" id="project-frame">
-          <p class="project-eyebrow" id="project-eyebrow"></p>
-          <h2 class="project-title" id="project-title"></h2>
-          <p class="project-meta" id="project-meta"></p>
+      <section class="container">
+        <div class="section-heading">
+          <h2>Core Strengths</h2>
+          <a href="about.html">Full experience →</a>
         </div>
+        <div class="strength-grid" id="strengths-preview"></div>
       </section>
 
-      <section id="contact" class="section">
-        <div class="contact-inner">
-          <h2 class="contact-title">LET'S AUTOMATE<br />SOMETHING THAT SCALES.</h2>
-          <a class="contact-email" href="mailto:hello@continuum.dev">hello@continuum.dev</a>
-          <p class="contact-note">CI/CD · Infrastructure as Code · Containers · Observability · Cloud · Security</p>
+      <section class="container">
+        <div class="section-heading">
+          <h2>Selected Work</h2>
+          <a href="projects.html">All projects →</a>
         </div>
+        <div class="project-grid" id="projects-preview"></div>
       </section>
     </main>
 
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/home.js"></script>
   </body>
 </html>
