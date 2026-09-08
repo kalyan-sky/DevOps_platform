@@ -1,58 +1,52 @@
-# CONTINUUM — DevOps Systems, Visualized
+# Siddam Kalyan — Portfolio
 
-A single-page, scroll-driven 3D showcase of core DevOps concepts (glowing
-looping hero animation, floating glass panels with colored particle "smoke",
-a scroll-controlled camera flythrough through concept cards, and a persistent
-sidebar nav with search). Built from scratch with Three.js.
-
-Each showcase panel represents a DevOps discipline — CI/CD, infrastructure as
-code, containers & orchestration, observability, cloud infrastructure, and
-security (DevSecOps) — with its own title, one-line description, and color
-theme.
+A multi-page personal portfolio site for Siddam Kalyan (DevOps & AI Engineer), built with
+Vite and Three.js. Carries the same dark, glowing visual identity as the earlier CONTINUUM
+showcase (ribbon/particle ambient background, glass cards, bold display type), restructured
+as a real multi-page site: a persistent top navigation bar, and separate pages for Home,
+About (resume), Projects, and Contact.
 
 ## Stack
 
-- [Vite](https://vitejs.dev/) for dev server / bundling
-- [Three.js](https://threejs.org/) for the WebGL scene (ribbon hero, particle field,
-  glass panels, bloom post-processing via `EffectComposer` + `UnrealBloomPass`)
+- [Vite](https://vitejs.dev/) — multi-page build (see `vite.config.js`)
+- [Three.js](https://threejs.org/) — lightweight ambient WebGL background (ribbon + particles),
+  shared across every page via `src/ambient-scene.js`
 - Vanilla JS/CSS — no framework
+
+## Pages
+
+| Page | File | Content |
+|---|---|---|
+| Home | `index.html` | Hero, key stats, strengths preview, featured projects |
+| About | `about.html` | Summary, core strengths, experience timeline, certifications, education |
+| Projects | `projects.html` | Full project grid (BiteNXT, Vation AURA, V-OpsOra/V-Opsly, eSanchaya) |
+| Contact | `contact.html` | Email, phone, LinkedIn, location |
 
 ## Structure
 
 ```
-index.html        Page markup: topbar, sidebar nav, hero/showcase/contact sections
-src/main.js       Scroll-progress math, DOM overlay updates, nav/search wiring
-src/scene.js      Three.js scene: ribbon, particles, panels, scroll-driven camera
-src/texture.js    Procedural canvas "smoke" texture for panel materials
-src/data.js       DevOps concept list shown in the showcase (title, category, tagline, colors)
-src/style.css     Layout, typography, glow effects
+index.html, about.html, projects.html, contact.html   Page markup
+src/content.js       Single source of truth for all resume-derived content
+src/nav.js           Shared top navigation bar + footer, mounted on every page
+src/ambient-scene.js Shared Three.js ambient background (ribbon + particles)
+src/home.js          Page-specific rendering logic for index.html
+src/about.js         Page-specific rendering logic for about.html
+src/projects.js      Page-specific rendering logic for projects.html
+src/contact.js       Page-specific rendering logic for contact.html
+src/style.css        Shared design system: tokens, nav, cards, timeline, grids, footer
 ```
 
-## How it works
+## Editing content
 
-The whole experience lives on one tall page. `main.js` computes a 0–1 progress
-value for each of the three sections (hero / showcase / contact) from
-`window.scrollY`, and `scene.js` uses those to drive a continuous camera dolly:
-hero shows a glowing infinity-loop ribbon, showcase flies the camera down a
-"corridor" of DevOps concept panels (title text overlaid via DOM, crossfading
-as the focal concept changes), and contact fades the scene out.
-
-The left sidebar's category links (CI/CD, Infrastructure as Code, Containers,
-Observability, Cloud, Security) and the "ASK THE PIPELINE" search both work by
-scrolling the camera to the matching concept's position along that corridor.
-
-## Adding or editing concepts
-
-Edit `src/data.js` — each entry needs a `title`, a `category` (must match one
-of the `data-filter` values in `index.html`'s sidebar `<ul>`), a `tag`
-(eyebrow label), a one-line `meta` description, and two hex colors used for
-the panel's particle-smoke texture and glow border.
+All resume-derived content (profile, stats, strengths, experience, certifications,
+education, projects) lives in `src/content.js`. Edit it there — every page renders from
+this one file, so nothing needs to be duplicated.
 
 ## Development
 
 ```bash
 npm install
 npm run dev       # start dev server (http://localhost:5173)
-npm run build      # production build to dist/
+npm run build      # production build to dist/ (all four pages)
 npm run preview    # preview the production build
 ```
