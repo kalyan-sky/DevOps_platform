@@ -18,7 +18,10 @@ app.use(cors({ origin: allowedOrigin }));
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-app.get('/healthz', (req, res) => {
+// Named /status rather than /healthz: some platform infrastructure (Cloud Run's
+// underlying Knative/Envoy layer) appears to intercept /healthz at the edge
+// before it reaches the container, regardless of app-level routing.
+app.get('/status', (req, res) => {
   res.json({ ok: true, firestore: isUsingFirestore(), whatsappConfigured: isConfigured() });
 });
 
