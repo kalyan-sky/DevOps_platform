@@ -1,6 +1,8 @@
 import { NAV_LINKS, PROFILE } from './content.js';
+import { mountChatWidget } from './chat-widget.js';
 
 export function mountNav(activeHref) {
+  mountChatWidget();
   const nav = document.createElement('nav');
   nav.className = 'topbar';
   nav.innerHTML = `
