@@ -1,3 +1,7 @@
+// Set this to your deployed chat-bridge Cloud Run URL (see server/README.md).
+// Leave as null to hide the chat widget entirely.
+export const CHAT_API_BASE = null; // e.g. 'https://whatsapp-chat-bridge-xxxxx.a.run.app'
+
 export const PROFILE = {
   name: 'Siddam Kalyan',
   role: 'DevOps & AI Engineer',
