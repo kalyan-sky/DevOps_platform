@@ -3,6 +3,24 @@ import { CHAT_API_BASE, PROFILE } from './content.js';
 const SESSION_KEY = 'chat_session_id';
 const NAME_KEY = 'chat_visitor_name';
 const POLL_INTERVAL_MS = 4000;
+const FIRST_NAME = PROFILE.name.split(' ')[0];
+const BOT_NAME = `${FIRST_NAME}'s Assistant`;
+const GREETING_TEXT = `Hi! I'm ${FIRST_NAME}'s assistant. Leave a message below and he'll reply personally on WhatsApp, usually within a few hours.`;
+
+function initials(name) {
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .join('');
+}
+
+function formatTime(iso) {
+  try {
+    return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
 
 function getOrCreateSessionId() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -27,13 +45,22 @@ export function mountChatWidget() {
     <button class="chat-fab" id="chat-fab" aria-label="Open chat">💬</button>
     <div class="chat-panel" id="chat-panel" hidden>
       <div class="chat-header">
-        <div>
-          <p class="chat-title">Chat with ${escapeHtml(PROFILE.name.split(' ')[0])}</p>
-          <p class="chat-subtitle">Replies come from WhatsApp, usually within a few hours</p>
+        <div class="chat-avatar" aria-hidden="true">${escapeHtml(initials(PROFILE.name))}</div>
+        <div class="chat-header-text">
+          <p class="chat-title">${escapeHtml(BOT_NAME)}</p>
+          <p class="chat-subtitle"><span class="chat-status-dot"></span>Replies come from WhatsApp, usually within a few hours</p>
         </div>
         <button class="chat-close" id="chat-close" aria-label="Close chat">✕</button>
       </div>
-      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg chat-msg-owner">
+          <div class="chat-avatar chat-avatar-sm" aria-hidden="true">${escapeHtml(initials(PROFILE.name))}</div>
+          <div class="chat-bubble">
+            <span class="chat-msg-text">${escapeHtml(GREETING_TEXT)}</span>
+          </div>
+        </div>
+        <div id="chat-thread"></div>
+      </div>
       <p class="chat-error" id="chat-error" hidden></p>
       <form class="chat-form" id="chat-form">
         ${!visitorName ? '<input class="chat-name-input" id="chat-name" placeholder="Your name (optional)" autocomplete="name" />' : ''}
@@ -50,6 +77,7 @@ export function mountChatWidget() {
   const panel = root.querySelector('#chat-panel');
   const closeBtn = root.querySelector('#chat-close');
   const messagesEl = root.querySelector('#chat-messages');
+  const threadEl = root.querySelector('#chat-thread');
   const errorEl = root.querySelector('#chat-error');
   const form = root.querySelector('#chat-form');
   const textInput = root.querySelector('#chat-text');
@@ -65,12 +93,20 @@ export function mountChatWidget() {
   function renderMessages(messages) {
     if (messages.length === renderedCount) return;
     renderedCount = messages.length;
-    messagesEl.innerHTML = messages
-      .map(
-        (m) => `<div class="chat-msg chat-msg-${m.from}">
-          <span class="chat-msg-text">${escapeHtml(m.text)}</span>
-        </div>`
-      )
+    threadEl.innerHTML = messages
+      .map((m) => {
+        const avatar =
+          m.from === 'owner'
+            ? `<div class="chat-avatar chat-avatar-sm" aria-hidden="true">${escapeHtml(initials(PROFILE.name))}</div>`
+            : '';
+        return `<div class="chat-msg chat-msg-${m.from}">
+          ${avatar}
+          <div class="chat-bubble">
+            <span class="chat-msg-text">${escapeHtml(m.text)}</span>
+            <span class="chat-msg-time">${formatTime(m.at)}</span>
+          </div>
+        </div>`;
+      })
       .join('');
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
