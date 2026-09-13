@@ -63,7 +63,7 @@ export function mountChatWidget() {
       </div>
       <p class="chat-error" id="chat-error" hidden></p>
       <form class="chat-form" id="chat-form">
-        ${!visitorName ? '<input class="chat-name-input" id="chat-name" placeholder="Your name (optional)" autocomplete="name" />' : ''}
+        ${!visitorName ? '<input class="chat-name-input" id="chat-name" placeholder="Your name" autocomplete="name" required />' : ''}
         <div class="chat-input-row">
           <input class="chat-text-input" id="chat-text" placeholder="Type a message…" autocomplete="off" required />
           <button class="chat-send" type="submit" aria-label="Send">→</button>
