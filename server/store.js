@@ -75,13 +75,13 @@ export async function getMostRecentOpenSession() {
 export async function addMessage(sessionId, message) {
   const record = { ...message, at: new Date().toISOString() };
   if (usingFirestore) {
-    await firestore.collection('chat_sessions').doc(sessionId).collection('messages').add(record);
-    return record;
+    const ref = await firestore.collection('chat_sessions').doc(sessionId).collection('messages').add(record);
+    return { ...record, id: ref.id };
   }
   const list = memMessages.get(sessionId) || [];
   list.push(record);
   memMessages.set(sessionId, list);
-  return record;
+  return { ...record, id: list.length - 1 };
 }
 
 export async function getMessages(sessionId) {
@@ -92,28 +92,50 @@ export async function getMessages(sessionId) {
       .collection('messages')
       .orderBy('at', 'asc')
       .get();
-    return snap.docs.map((d) => d.data());
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   }
-  return memMessages.get(sessionId) || [];
+  return (memMessages.get(sessionId) || []).map((m, id) => ({ id, ...m }));
 }
 
-// Maps a sent WhatsApp message id back to the session it was sent for, so a
-// swipe-reply (which carries the original message's id as context.id) can be
-// routed to the right visitor instead of guessing "most recently active".
-export async function recordOutboundMessage(waMessageId, sessionId) {
-  if (!waMessageId) return;
+// Marks a visitor's message as read (from a WhatsApp "read" status webhook)
+// so the widget can show a seen indicator.
+export async function markMessageRead(sessionId, messageId) {
   if (usingFirestore) {
-    await firestore.collection('wa_message_index').doc(waMessageId).set({ sessionId });
+    await firestore
+      .collection('chat_sessions')
+      .doc(sessionId)
+      .collection('messages')
+      .doc(messageId)
+      .update({ read: true });
     return;
   }
-  memOutboundMessages.set(waMessageId, sessionId);
+  const list = memMessages.get(sessionId);
+  if (list && list[messageId]) list[messageId] = { ...list[messageId], read: true };
 }
 
-export async function getSessionIdForMessage(waMessageId) {
+// Maps a sent WhatsApp message id back to where it came from, so a
+// swipe-reply (which carries the original message's id as context.id) can be
+// routed to the right visitor instead of guessing "most recently active",
+// and a "read" status webhook can mark the right message as seen.
+export async function recordOutboundMessage(waMessageId, sessionId, messageId) {
+  if (!waMessageId) return;
+  if (usingFirestore) {
+    await firestore.collection('wa_message_index').doc(waMessageId).set({ sessionId, messageId });
+    return;
+  }
+  memOutboundMessages.set(waMessageId, { sessionId, messageId });
+}
+
+export async function getOutboundMessageRef(waMessageId) {
   if (!waMessageId) return null;
   if (usingFirestore) {
     const doc = await firestore.collection('wa_message_index').doc(waMessageId).get();
-    return doc.exists ? doc.data().sessionId : null;
+    return doc.exists ? doc.data() : null;
   }
   return memOutboundMessages.get(waMessageId) || null;
+}
+
+export async function getSessionIdForMessage(waMessageId) {
+  const ref = await getOutboundMessageRef(waMessageId);
+  return ref ? ref.sessionId : null;
 }

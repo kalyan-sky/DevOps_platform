@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import {
   getSession,
   upsertSession,
@@ -10,16 +11,29 @@ import {
   sessionTag,
   recordOutboundMessage,
   getSessionIdForMessage,
+  getOutboundMessageRef,
+  markMessageRead,
 } from './store.js';
 import { sendTemplateMessage, sendTextMessage, isConfigured } from './whatsapp.js';
 
 const app = express();
+app.set('trust proxy', true); // Cloud Run sits behind a proxy; needed for req.ip to reflect the real client
 app.use(express.json());
 
 const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
 app.use(cors({ origin: allowedOrigin }));
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+// Caps how fast a single visitor can send messages — this endpoint triggers a
+// real WhatsApp send (and counts against Meta's messaging quota) per request.
+const chatRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many messages — please wait a moment before sending another.' },
+});
 
 // Named /status rather than /healthz: some platform infrastructure (Cloud Run's
 // underlying Knative/Envoy layer) appears to intercept /healthz at the edge
@@ -46,8 +60,17 @@ app.post('/webhook', async (req, res) => {
   res.sendStatus(200); // ack immediately; Meta expects a fast response
 
   try {
-    const entry = req.body?.entry?.[0];
-    const change = entry?.changes?.[0];
+    const change = req.body?.entry?.[0]?.changes?.[0];
+
+    // "Read" receipts: Meta reports when you've read a message you were
+    // sent, so the widget can show the visitor their message was seen.
+    const statuses = change?.value?.statuses || [];
+    for (const status of statuses) {
+      if (status.status !== 'read') continue;
+      const ref = await getOutboundMessageRef(status.id);
+      if (ref) await markMessageRead(ref.sessionId, ref.messageId);
+    }
+
     const message = change?.value?.messages?.[0];
     if (!message || message.type !== 'text') return;
 
@@ -73,7 +96,7 @@ app.post('/webhook', async (req, res) => {
 });
 
 // ---- Visitor sends a message from the site's chat widget ----
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', chatRateLimit, async (req, res) => {
   try {
     const { sessionId, text, visitorName } = req.body || {};
     if (!sessionId || typeof sessionId !== 'string') {
@@ -109,7 +132,7 @@ app.post('/api/chat', async (req, res) => {
         ? await sendTextMessage(`${label}: ${text.trim()}`)
         : await sendTemplateMessage([label, text.trim()]);
       const waMessageId = result?.messages?.[0]?.id;
-      await recordOutboundMessage(waMessageId, sessionId);
+      await recordOutboundMessage(waMessageId, sessionId, stored.id);
     } catch (sendErr) {
       console.error('WhatsApp delivery failed (message is still saved):', sendErr);
     }
