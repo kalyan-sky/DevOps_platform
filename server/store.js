@@ -16,9 +16,20 @@ if (process.env.USE_FIRESTORE !== 'false') {
 // production use (state is lost on restart and not shared across instances).
 const memSessions = new Map();
 const memMessages = new Map(); // sessionId -> array of messages
+const memOutboundMessages = new Map(); // WhatsApp message id -> sessionId
 
 export function isUsingFirestore() {
   return usingFirestore;
+}
+
+// Short, human-readable label for a session (e.g. "V4821") so multiple
+// concurrent visitors are distinguishable in WhatsApp even without a name.
+export function sessionTag(sessionId) {
+  let hash = 0;
+  for (let i = 0; i < sessionId.length; i++) {
+    hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0;
+  }
+  return `V${(hash % 9000) + 1000}`;
 }
 
 export async function getSession(sessionId) {
@@ -84,4 +95,25 @@ export async function getMessages(sessionId) {
     return snap.docs.map((d) => d.data());
   }
   return memMessages.get(sessionId) || [];
+}
+
+// Maps a sent WhatsApp message id back to the session it was sent for, so a
+// swipe-reply (which carries the original message's id as context.id) can be
+// routed to the right visitor instead of guessing "most recently active".
+export async function recordOutboundMessage(waMessageId, sessionId) {
+  if (!waMessageId) return;
+  if (usingFirestore) {
+    await firestore.collection('wa_message_index').doc(waMessageId).set({ sessionId });
+    return;
+  }
+  memOutboundMessages.set(waMessageId, sessionId);
+}
+
+export async function getSessionIdForMessage(waMessageId) {
+  if (!waMessageId) return null;
+  if (usingFirestore) {
+    const doc = await firestore.collection('wa_message_index').doc(waMessageId).get();
+    return doc.exists ? doc.data().sessionId : null;
+  }
+  return memOutboundMessages.get(waMessageId) || null;
 }
