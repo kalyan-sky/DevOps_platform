@@ -847,6 +847,13 @@ main {
   align-self: flex-start;
 }
 
+.chat-msg-seen {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  opacity: 0.6;
+  margin-left: 0.4em;
+}
+
 .chat-error {
   font-family: var(--mono);
   font-size: 0.68rem;

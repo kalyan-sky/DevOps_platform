@@ -36,7 +36,7 @@ export function mountChatWidget() {
 
   const sessionId = getOrCreateSessionId();
   let visitorName = localStorage.getItem(NAME_KEY) || '';
-  let renderedCount = 0;
+  let renderedSignature = '';
   let pollTimer = null;
 
   const root = document.createElement('div');
@@ -91,19 +91,21 @@ export function mountChatWidget() {
   }
 
   function renderMessages(messages) {
-    if (messages.length === renderedCount) return;
-    renderedCount = messages.length;
+    const signature = messages.map((m) => `${m.id}:${m.read ? 1 : 0}`).join(',');
+    if (signature === renderedSignature) return;
+    renderedSignature = signature;
     threadEl.innerHTML = messages
       .map((m) => {
         const avatar =
           m.from === 'owner'
             ? `<div class="chat-avatar chat-avatar-sm" aria-hidden="true">${escapeHtml(initials(PROFILE.name))}</div>`
             : '';
+        const seen = m.from === 'visitor' && m.read ? '<span class="chat-msg-seen">Seen</span>' : '';
         return `<div class="chat-msg chat-msg-${m.from}">
           ${avatar}
           <div class="chat-bubble">
             <span class="chat-msg-text">${escapeHtml(m.text)}</span>
-            <span class="chat-msg-time">${formatTime(m.at)}</span>
+            <span class="chat-msg-time">${formatTime(m.at)}${seen}</span>
           </div>
         </div>`;
       })
