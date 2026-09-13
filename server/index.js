@@ -98,7 +98,12 @@ app.post('/api/chat', async (req, res) => {
     // The visitor's message is already durably stored above, so a WhatsApp
     // delivery failure here (e.g. template pending Meta approval) shouldn't
     // read to the visitor as "your message was lost" — it wasn't.
-    const label = `[${sessionTag(sessionId)}] ${session.visitorName}`;
+    // The widget requires a name, so it's usually enough on its own to tell
+    // visitors apart; fall back to a tag only if one really wasn't given
+    // (e.g. a direct API call that skips the widget's validation).
+    const label = session.visitorName === 'Site visitor'
+      ? `${session.visitorName} (${sessionTag(sessionId)})`
+      : session.visitorName;
     try {
       const result = withinServiceWindow && !isNewSession
         ? await sendTextMessage(`${label}: ${text.trim()}`)
