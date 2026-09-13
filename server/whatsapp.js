@@ -1,4 +1,4 @@
-const GRAPH_VERSION = 'v20.0';
+const GRAPH_VERSION = 'v23.0';
 
 function isConfigured() {
   return Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_TO_NUMBER);
@@ -43,7 +43,7 @@ export async function sendTemplateMessage(bodyParams) {
     type: 'template',
     template: {
       name: templateName,
-      language: { code: 'en_US' },
+      language: { code: 'en' },
       components: [
         {
           type: 'body',

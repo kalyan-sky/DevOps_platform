@@ -87,10 +87,17 @@ app.post('/api/chat', async (req, res) => {
     const lastOwnerMessageAt = session.lastOwnerMessageAt ? new Date(session.lastOwnerMessageAt).getTime() : 0;
     const withinServiceWindow = Date.now() - lastOwnerMessageAt < TWENTY_FOUR_HOURS_MS;
 
-    if (withinServiceWindow && !isNewSession) {
-      await sendTextMessage(`${session.visitorName}: ${text.trim()}`);
-    } else {
-      await sendTemplateMessage([session.visitorName, text.trim()]);
+    // The visitor's message is already durably stored above, so a WhatsApp
+    // delivery failure here (e.g. template pending Meta approval) shouldn't
+    // read to the visitor as "your message was lost" — it wasn't.
+    try {
+      if (withinServiceWindow && !isNewSession) {
+        await sendTextMessage(`${session.visitorName}: ${text.trim()}`);
+      } else {
+        await sendTemplateMessage([session.visitorName, text.trim()]);
+      }
+    } catch (sendErr) {
+      console.error('WhatsApp delivery failed (message is still saved):', sendErr);
     }
 
     res.json({ ok: true, message: stored });
