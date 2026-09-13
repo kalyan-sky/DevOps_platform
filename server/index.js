@@ -7,6 +7,9 @@ import {
   addMessage,
   getMessages,
   isUsingFirestore,
+  sessionTag,
+  recordOutboundMessage,
+  getSessionIdForMessage,
 } from './store.js';
 import { sendTemplateMessage, sendTextMessage, isConfigured } from './whatsapp.js';
 
@@ -51,7 +54,12 @@ app.post('/webhook', async (req, res) => {
     const text = message.text?.body;
     if (!text) return;
 
-    const session = await getMostRecentOpenSession();
+    // Swipe-replying to a specific message in WhatsApp routes to that
+    // visitor's session; otherwise fall back to the most recently active one
+    // (fine when only one conversation is going on).
+    const repliedToId = message.context?.id;
+    const targetSessionId = repliedToId ? await getSessionIdForMessage(repliedToId) : null;
+    const session = targetSessionId ? await getSession(targetSessionId) : await getMostRecentOpenSession();
     if (!session) {
       console.warn('Received a WhatsApp reply but no open chat session was found.');
       return;
@@ -90,12 +98,13 @@ app.post('/api/chat', async (req, res) => {
     // The visitor's message is already durably stored above, so a WhatsApp
     // delivery failure here (e.g. template pending Meta approval) shouldn't
     // read to the visitor as "your message was lost" — it wasn't.
+    const label = `[${sessionTag(sessionId)}] ${session.visitorName}`;
     try {
-      if (withinServiceWindow && !isNewSession) {
-        await sendTextMessage(`${session.visitorName}: ${text.trim()}`);
-      } else {
-        await sendTemplateMessage([session.visitorName, text.trim()]);
-      }
+      const result = withinServiceWindow && !isNewSession
+        ? await sendTextMessage(`${label}: ${text.trim()}`)
+        : await sendTemplateMessage([label, text.trim()]);
+      const waMessageId = result?.messages?.[0]?.id;
+      await recordOutboundMessage(waMessageId, sessionId);
     } catch (sendErr) {
       console.error('WhatsApp delivery failed (message is still saved):', sendErr);
     }

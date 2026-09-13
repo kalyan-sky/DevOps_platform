@@ -44,6 +44,12 @@ This service (Cloud Run) ──stores in Firestore, calls── WhatsApp Cloud A
    `whatsapp_business_messaging` permission, generate a token with no expiry.
 7. **Enable Firestore** in your GCP project (Firestore → Native mode) — free
    tier is generous and plenty for personal traffic volume.
+8. **Create the composite index** the inbound-webhook lookup needs (`chat_sessions`
+   filtered by `status` and ordered by `lastActivityAt` — Firestore doesn't
+   create this automatically). Either deploy `server/firestore.indexes.json`
+   with the Firebase CLI (`firebase deploy --only firestore:indexes`), or run
+   the query once against a real deployment and click the index-creation link
+   Firestore prints in the error — either way it takes 1-2 minutes to build.
 
 ## Deploying this service
 
