@@ -135,11 +135,30 @@ export function mountAmbientScene(canvas) {
     pMat.blending = palette.blending;
   });
 
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const mouse = new THREE.Vector2(0, 0);
   const mouseTarget = new THREE.Vector2(0, 0);
+
+  // Cursor-reactive particles: raycast the pointer onto a plane at the
+  // particle field's rough depth, then push nearby particles away from that
+  // point each frame (see the repulsion loop below). Skipped entirely for
+  // reduced-motion, along with the idle depth drift it perturbs.
+  const raycaster = new THREE.Raycaster();
+  const interactionPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 2); // world z = -2
+  const hoverPoint = new THREE.Vector3(0, 0, -2);
+  let hasHovered = false;
+  const REPEL_RADIUS = 2.2;
+  const REPEL_STRENGTH = 0.9;
+
   window.addEventListener('pointermove', (e) => {
     mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouseTarget.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    if (!reduceMotion) {
+      raycaster.setFromCamera(mouseTarget, camera);
+      raycaster.ray.intersectPlane(interactionPlane, hoverPoint);
+      hasHovered = true;
+    }
   });
 
   window.addEventListener('resize', () => {
@@ -162,8 +181,29 @@ export function mountAmbientScene(canvas) {
 
     const posAttr = particles.geometry.attributes.position;
     for (let i = 0; i < speeds.length; i++) {
-      posAttr.array[i * 3] = pBase[i * 3] + Math.sin(t * speeds[i] + i) * 0.4;
-      posAttr.array[i * 3 + 1] = pBase[i * 3 + 1] + Math.cos(t * speeds[i] * 0.8 + i) * 0.3;
+      let x = pBase[i * 3] + Math.sin(t * speeds[i] + i) * 0.4;
+      let y = pBase[i * 3 + 1] + Math.cos(t * speeds[i] * 0.8 + i) * 0.3;
+      // Idle depth drift — without this, particles only ever moved in X/Y,
+      // so the "3D" field was really just a flat plane viewed in perspective.
+      let z = pBase[i * 3 + 2] + (reduceMotion ? 0 : Math.sin(t * speeds[i] * 0.6 + i * 1.3) * 0.35);
+
+      if (!reduceMotion && hasHovered) {
+        const dx = x - hoverPoint.x;
+        const dy = y - hoverPoint.y;
+        const dz = z - hoverPoint.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist < REPEL_RADIUS) {
+          const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
+          const inv = force / (dist || 0.001);
+          x += dx * inv;
+          y += dy * inv;
+          z += dz * inv;
+        }
+      }
+
+      posAttr.array[i * 3] = x;
+      posAttr.array[i * 3 + 1] = y;
+      posAttr.array[i * 3 + 2] = z;
     }
     posAttr.needsUpdate = true;
 
