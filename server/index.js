@@ -17,7 +17,11 @@ import {
 import { sendTemplateMessage, sendTextMessage, isConfigured } from './whatsapp.js';
 
 const app = express();
-app.set('trust proxy', true); // Cloud Run sits behind a proxy; needed for req.ip to reflect the real client
+// Cloud Run sits exactly one proxy hop in front of the container. Trusting
+// only that one hop (not `true`, which trusts any number of hops) is what
+// lets req.ip reflect the real client while still stopping a client from
+// spoofing their own IP via X-Forwarded-For to dodge the rate limit below.
+app.set('trust proxy', 1);
 app.use(express.json());
 
 const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
