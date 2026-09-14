@@ -142,14 +142,22 @@ export function mountAmbientScene(canvas) {
 
   // Cursor-reactive particles: raycast the pointer onto a plane at the
   // particle field's rough depth, then push nearby particles away from that
-  // point each frame (see the repulsion loop below). Skipped entirely for
-  // reduced-motion, along with the idle depth drift it perturbs.
+  // point (see the repulsion loop below). Two layers of easing make this
+  // feel fluid rather than snapping to the raw cursor position: the
+  // interaction point itself trails the cursor (smoothHoverPoint), and each
+  // particle's displacement eases toward its target instead of jumping
+  // there, so it settles back like it's moving through something viscous.
+  // Skipped entirely for reduced-motion, along with the idle depth drift.
   const raycaster = new THREE.Raycaster();
   const interactionPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 2); // world z = -2
   const hoverPoint = new THREE.Vector3(0, 0, -2);
+  const smoothHoverPoint = new THREE.Vector3(0, 0, -2);
+  const displacements = new Float32Array(count * 3);
   let hasHovered = false;
-  const REPEL_RADIUS = 2.2;
-  const REPEL_STRENGTH = 0.9;
+  const REPEL_RADIUS = 2.4;
+  const REPEL_STRENGTH = 0.75;
+  const HOVER_EASE = 0.06;
+  const DISPLACEMENT_EASE = 0.07;
 
   window.addEventListener('pointermove', (e) => {
     mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -167,6 +175,15 @@ export function mountAmbientScene(canvas) {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
+  // Opt-in mic reactivity (see audio-reactive.js) — off until the visitor
+  // explicitly enables it, and eased in the same fluid style as the hover
+  // effect rather than snapping to each frame's raw level.
+  let audioLevel = { bass: 0, mid: 0, treble: 0 };
+  const smoothAudio = { bass: 0, mid: 0, treble: 0 };
+  window.addEventListener('audiolevel', (e) => {
+    audioLevel = e.detail;
+  });
+
   const clock = new THREE.Clock();
   let running = true;
 
@@ -175,35 +192,52 @@ export function mountAmbientScene(canvas) {
     const t = clock.elapsedTime;
     clock.getDelta();
     mouse.lerp(mouseTarget, 0.05);
+    if (!reduceMotion && hasHovered) smoothHoverPoint.lerp(hoverPoint, HOVER_EASE);
+
+    smoothAudio.bass += (audioLevel.bass - smoothAudio.bass) * 0.15;
+    smoothAudio.mid += (audioLevel.mid - smoothAudio.mid) * 0.15;
+    smoothAudio.treble += (audioLevel.treble - smoothAudio.treble) * 0.15;
 
     ribbonGroup.rotation.y = t * 0.12;
     ribbonGroup.rotation.x = Math.sin(t * 0.07) * 0.12;
+    ribbonGroup.scale.setScalar(1 + smoothAudio.bass * 0.08);
+    ribbonA.material.opacity = Math.min(1, palette.ribbonOpacity + smoothAudio.mid * 0.35);
+    ribbonB.material.opacity = Math.min(1, palette.ribbonOpacity + smoothAudio.treble * 0.35);
 
     const posAttr = particles.geometry.attributes.position;
     for (let i = 0; i < speeds.length; i++) {
-      let x = pBase[i * 3] + Math.sin(t * speeds[i] + i) * 0.4;
-      let y = pBase[i * 3 + 1] + Math.cos(t * speeds[i] * 0.8 + i) * 0.3;
+      const x = pBase[i * 3] + Math.sin(t * speeds[i] + i) * 0.4;
+      const y = pBase[i * 3 + 1] + Math.cos(t * speeds[i] * 0.8 + i) * 0.3;
       // Idle depth drift — without this, particles only ever moved in X/Y,
       // so the "3D" field was really just a flat plane viewed in perspective.
-      let z = pBase[i * 3 + 2] + (reduceMotion ? 0 : Math.sin(t * speeds[i] * 0.6 + i * 1.3) * 0.35);
+      // Bass (when mic reactivity is on) adds an extra push toward the camera.
+      const z = pBase[i * 3 + 2]
+        + (reduceMotion ? 0 : Math.sin(t * speeds[i] * 0.6 + i * 1.3) * 0.35)
+        + smoothAudio.bass * 1.1;
 
+      let tx = 0, ty = 0, tz = 0;
       if (!reduceMotion && hasHovered) {
-        const dx = x - hoverPoint.x;
-        const dy = y - hoverPoint.y;
-        const dz = z - hoverPoint.z;
+        const dx = x - smoothHoverPoint.x;
+        const dy = y - smoothHoverPoint.y;
+        const dz = z - smoothHoverPoint.z;
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (dist < REPEL_RADIUS) {
           const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
           const inv = force / (dist || 0.001);
-          x += dx * inv;
-          y += dy * inv;
-          z += dz * inv;
+          tx = dx * inv;
+          ty = dy * inv;
+          tz = dz * inv;
         }
       }
 
-      posAttr.array[i * 3] = x;
-      posAttr.array[i * 3 + 1] = y;
-      posAttr.array[i * 3 + 2] = z;
+      const di = i * 3;
+      displacements[di] += (tx - displacements[di]) * DISPLACEMENT_EASE;
+      displacements[di + 1] += (ty - displacements[di + 1]) * DISPLACEMENT_EASE;
+      displacements[di + 2] += (tz - displacements[di + 2]) * DISPLACEMENT_EASE;
+
+      posAttr.array[di] = x + displacements[di];
+      posAttr.array[di + 1] = y + displacements[di + 1];
+      posAttr.array[di + 2] = z + displacements[di + 2];
     }
     posAttr.needsUpdate = true;
 
