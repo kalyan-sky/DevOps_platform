@@ -1,5 +1,6 @@
 import { mountNav, mountFooter } from './nav.js';
 import { mountAmbientScene } from './ambient-scene.js';
+import { mountScrollReveal } from './reveal.js';
 import { PROFILE } from './content.js';
 
 mountNav('contact.html');
@@ -26,3 +27,4 @@ document.getElementById('contact-grid').innerHTML = cards
   .join('');
 
 mountFooter();
+mountScrollReveal();

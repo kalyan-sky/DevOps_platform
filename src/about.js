@@ -1,5 +1,6 @@
 import { mountNav, mountFooter } from './nav.js';
 import { mountAmbientScene } from './ambient-scene.js';
+import { mountScrollReveal } from './reveal.js';
 import { PROFILE, STRENGTHS, EXPERIENCE, CERTIFICATIONS, EDUCATION } from './content.js';
 
 mountNav('about.html');
@@ -35,3 +36,4 @@ document.getElementById('education').innerHTML = `
 `;
 
 mountFooter();
+mountScrollReveal();

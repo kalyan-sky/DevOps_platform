@@ -1,5 +1,6 @@
 import { mountNav, mountFooter } from './nav.js';
 import { mountAmbientScene } from './ambient-scene.js';
+import { mountScrollReveal } from './reveal.js';
 import { PROJECTS } from './content.js';
 
 mountNav('projects.html');
@@ -16,3 +17,4 @@ document.getElementById('projects').innerHTML = PROJECTS.map(
 ).join('');
 
 mountFooter();
+mountScrollReveal();

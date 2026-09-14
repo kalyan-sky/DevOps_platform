@@ -1,5 +1,6 @@
 import { mountNav, mountFooter } from './nav.js';
 import { mountAmbientScene } from './ambient-scene.js';
+import { mountScrollReveal } from './reveal.js';
 import { STATS, STRENGTHS, PROJECTS, PROFILE } from './content.js';
 
 mountNav('index.html');
@@ -43,3 +44,4 @@ projectsPreview.innerHTML = PROJECTS.filter((p) => p.featured)
   .join('');
 
 mountFooter();
+mountScrollReveal();
