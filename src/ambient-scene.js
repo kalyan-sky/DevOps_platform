@@ -1,9 +1,42 @@
 import * as THREE from 'three';
 
+// Additive blending (used for the dark theme's glow look) adds light onto
+// whatever's already drawn — great against a near-black background, but it
+// blows out to white almost immediately against a light one. Light mode
+// switches to normal blending with deeper, more saturated colors instead so
+// the scene stays visible rather than washing out.
+const PALETTES = {
+  dark: {
+    bg: 0x08080a,
+    ribbonA: 0xf4f0ff,
+    ribbonB: 0x8b5cf6,
+    particles: [0x8b5cf6, 0xec4899, 0x2dd4bf, 0xf59e0b, 0x60a5fa],
+    blending: THREE.AdditiveBlending,
+    ribbonOpacity: 0.55,
+    particleOpacity: 0.75,
+  },
+  light: {
+    bg: 0xf7f6fb,
+    ribbonA: 0x4c1d95,
+    ribbonB: 0x7c3aed,
+    particles: [0x7c3aed, 0xdb2777, 0x0f766e, 0xb45309, 0x1d4ed8],
+    blending: THREE.NormalBlending,
+    ribbonOpacity: 0.45,
+    particleOpacity: 0.55,
+  },
+};
+
+function getTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
 export function mountAmbientScene(canvas) {
+  let theme = getTheme();
+  let palette = PALETTES[theme];
+
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x08080a);
-  scene.fog = new THREE.FogExp2(0x08080a, 0.05);
+  scene.background = new THREE.Color(palette.bg);
+  scene.fog = new THREE.FogExp2(palette.bg, 0.05);
 
   const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 6);
@@ -34,16 +67,16 @@ export function mountAmbientScene(canvas) {
     const mat = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
-      opacity: 0.55,
-      blending: THREE.AdditiveBlending,
+      opacity: palette.ribbonOpacity,
+      blending: palette.blending,
       depthWrite: false,
       fog: false,
     });
     return new THREE.Mesh(geo, mat);
   }
 
-  const ribbonA = makeRibbon(1.7, 3, 0, 0.045, 0xf4f0ff);
-  const ribbonB = makeRibbon(1.3, 3, Math.PI / 2, 0.03, 0x8b5cf6);
+  const ribbonA = makeRibbon(1.7, 3, 0, 0.045, palette.ribbonA);
+  const ribbonB = makeRibbon(1.3, 3, Math.PI / 2, 0.03, palette.ribbonB);
   ribbonB.scale.setScalar(0.82);
   ribbonGroup.add(ribbonA, ribbonB);
 
@@ -51,18 +84,22 @@ export function mountAmbientScene(canvas) {
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const speeds = new Float32Array(count);
-  const palette = [0x8b5cf6, 0xec4899, 0x2dd4bf, 0xf59e0b, 0x60a5fa];
   const c = new THREE.Color();
+  function fillParticleColors(paletteColors) {
+    for (let i = 0; i < count; i++) {
+      c.set(paletteColors[Math.floor(Math.random() * paletteColors.length)]);
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
+    }
+  }
   for (let i = 0; i < count; i++) {
     positions[i * 3] = (Math.random() - 0.5) * 14;
     positions[i * 3 + 1] = (Math.random() - 0.5) * 9;
     positions[i * 3 + 2] = (Math.random() - 0.5) * 10 - 2;
-    c.set(palette[Math.floor(Math.random() * palette.length)]);
-    colors[i * 3] = c.r;
-    colors[i * 3 + 1] = c.g;
-    colors[i * 3 + 2] = c.b;
     speeds[i] = 0.3 + Math.random() * 0.7;
   }
+  fillParticleColors(palette.particles);
   const pGeo = new THREE.BufferGeometry();
   pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -71,13 +108,32 @@ export function mountAmbientScene(canvas) {
     size: 0.05,
     vertexColors: true,
     transparent: true,
-    opacity: 0.75,
-    blending: THREE.AdditiveBlending,
+    opacity: palette.particleOpacity,
+    blending: palette.blending,
     depthWrite: false,
     sizeAttenuation: true,
   });
   const particles = new THREE.Points(pGeo, pMat);
   scene.add(particles);
+
+  // Live-swap colors/blending when the nav's theme toggle fires, so the
+  // scene doesn't require a page reload to match the new theme.
+  window.addEventListener('themechange', (e) => {
+    theme = e.detail?.theme === 'light' ? 'light' : 'dark';
+    palette = PALETTES[theme];
+    scene.background.set(palette.bg);
+    scene.fog.color.set(palette.bg);
+    ribbonA.material.color.set(palette.ribbonA);
+    ribbonA.material.opacity = palette.ribbonOpacity;
+    ribbonA.material.blending = palette.blending;
+    ribbonB.material.color.set(palette.ribbonB);
+    ribbonB.material.opacity = palette.ribbonOpacity;
+    ribbonB.material.blending = palette.blending;
+    fillParticleColors(palette.particles);
+    pGeo.attributes.color.needsUpdate = true;
+    pMat.opacity = palette.particleOpacity;
+    pMat.blending = palette.blending;
+  });
 
   const mouse = new THREE.Vector2(0, 0);
   const mouseTarget = new THREE.Vector2(0, 0);
