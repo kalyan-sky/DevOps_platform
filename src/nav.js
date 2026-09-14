@@ -1,5 +1,6 @@
 import { NAV_LINKS, PROFILE } from './content.js';
 import { mountChatWidget } from './chat-widget.js';
+import { mountAudioToggle } from './audio-reactive.js';
 
 const THEME_KEY = 'theme';
 
@@ -35,9 +36,13 @@ export function mountNav(activeHref) {
         (l) => `<li><a href="${l.href}" class="${l.href === activeHref ? 'active' : ''}">${l.label}</a></li>`
       ).join('')}
       <li><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme"></button></li>
+      <li id="audio-toggle-slot"></li>
     </ul>
   `;
   document.body.prepend(nav);
+
+  const audioToggle = mountAudioToggle();
+  nav.querySelector('#audio-toggle-slot').appendChild(audioToggle);
 
   const toggle = nav.querySelector('#nav-toggle');
   const links = nav.querySelector('#nav-links');
