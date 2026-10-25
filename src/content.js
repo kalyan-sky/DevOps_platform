@@ -12,7 +12,7 @@ export const PROFILE = {
   linkedin: 'https://linkedin.com/in/kalyan-sky0193',
   linkedinLabel: 'linkedin.com/in/kalyan-sky0193',
   summary:
-    'DevOps and AI Engineer with 4+ years building and running production cloud infrastructure on GCP and AWS, and delivering enterprise Generative AI / Agentic AI systems on top of it. Designs Terraform-based IaC, CI/CD pipelines, and Kubernetes platforms, and builds the RAG pipelines, LangGraph agents, and conversational AI that run on them.',
+    'DevOps and AI Engineer with 3+ years building and running production cloud infrastructure on GCP and AWS, and delivering enterprise Generative AI / Agentic AI systems on top of it. Designs Terraform-based IaC, CI/CD pipelines, and Kubernetes platforms, and builds the RAG pipelines, LangGraph agents, and conversational AI that run on them.',
 };
 
 export const STATS = [
