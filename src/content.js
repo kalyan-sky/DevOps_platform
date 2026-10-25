@@ -16,7 +16,7 @@ export const PROFILE = {
 };
 
 export const STATS = [
-  { value: '4+', label: 'Years in Production DevOps & AI' },
+  { value: '3+', label: 'Years in Production DevOps & AI' },
   { value: '70–85%', label: 'Faster Deployments Shipped' },
   { value: '2,000+', label: 'Users on Platforms Owned' },
   { value: '99.5%+', label: 'Uptime Delivered' },
