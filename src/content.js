@@ -105,7 +105,7 @@ export const EXPERIENCE = [
     role: 'AI Engineer & DevOps Engineer',
     company: 'Vation Digital Pvt. Ltd.',
     location: 'Bengaluru, India',
-    period: 'Apr 2022 – Present',
+    period: 'Apr 2023 – Present',
     bullets: [
       'Designed and built enterprise Generative AI applications using Vertex AI, LangChain, LangGraph, Claude, Gemini, and OpenAI APIs, including RAG pipelines for document search, contextual reasoning, and knowledge retrieval.',
       'Built multi-agent LangGraph workflows and conversational AI systems integrated with enterprise APIs and backend services; automated AI workflows using n8n.',
